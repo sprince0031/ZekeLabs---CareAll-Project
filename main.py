@@ -3,37 +3,9 @@ import hashlib
 import os
 import time
 import stdiomask
-
-class careGiver:
-    def __init__(self, id, name, contactNo, age, currentlyTakingCareOf, location, rating, reviews):
-        self.id = id
-        self.name = name
-        self.contactNo = contactNo
-        self.age = age
-        self.currentlyTakingCareOf = currentlyTakingCareOf
-        self.location = location
-        self.rating = rating
-        self.reviews = reviews
-
-class careSeeker:
-    def __init__(self, id, name, contactNo, age, location, reviewsGiven):
-        self.id = id
-        self.name = name
-        self.contactNo = contactNo
-        self.age = age
-        self.location = location
-        self.reviewsGiven = reviewsGiven
-
-def graphic():
-    os.system('clear')
-    print("\n  .oooooo.                                      .o.       oooo  oooo")
-    print(" d8P'  `Y8b                                    .888.      `888  `888")
-    print('888           .oooo.   oooo d8b  .ooooo.      .8"888.      888   888')
-    print('888          `P  )88b  `888""8P d88'+"' `88b    .8' `888.     888   888")
-    print('888           .oP"888   888     888ooo888   .88ooo8888.    888   888')
-    print("`88b    ooo  d8(  888   888     888    .o  .8'     `888.   888   888")
-    print(" `Y8bood8P'  `Y888"+'""8o d888b    `Y8bod8P'+"' o88o     o8888o o888o o888o")
-    print("\nCoded with <3 by Siddharth Prince.\nEmail: siddharthprince31@gmail.com\nGithub: https://github.com/sprince0031\nLinkedIn: https://linkedin.com/in/sprince0031\nCareAll project link: https://github.com/sprince0031/ZekeLabs-CareAll-Project")
+import caregiver as cg
+import careseeker as cs
+import display as dp
 
 def login():
     attempts = 0
@@ -59,12 +31,12 @@ def login():
                     newUser = row[4]
                     cur.execute("UPDATE auth SET loggedin = 1 WHERE username = ?", (username, ))
                     con.commit()
-                    cur.execute("SELECT username, usertype, lastlogin FROM auth WHERE username = ?", (username, ))
+                    cur.execute("SELECT id, username, usertype, loggedin, lastlogin FROM auth WHERE username = ?", (username, ))
                     row = cur.fetchone()
-                    print("Last login:", row[2])
+                    print("Last login:", row[4])
                     time.sleep(2)
                     # print(newUser)
-                    return row
+                    return row[0], row[1], row[2], row[3], row[4], newUser
                 else:
                     attempts += 1
                     print("Wrong password! You have {} attempt(s) remaining".format(3 - attempts))
@@ -104,21 +76,25 @@ def register():
             pwd = hashlib.sha256(password.encode('utf-8')).hexdigest()
             while True:
                 userType = int(input("Are you a 1. Care giver/ 2. Care seeker? (Enter 1 or 2): "))
-                if userType == 1:
-                    tableName = "careGiver"
-                    break
-                elif userType == 2:
-                    tableName = "careSeeker"
+                # if userType == 1:
+                #     tableName = "careGiver"
+                #     break
+                # elif userType == 2:
+                #     tableName = "careSeeker"
+                #     break
+                if userType in [1, 2]:
                     break
                 else:
                     print("Please enter a valid option and try again.")
             cur.execute("INSERT INTO auth (username, password, usertype, loggedin) VALUES (?, ?, ?, -1)", (username, pwd, userType))
             con.commit()
-            print("User successfully created! Please login to continue.")
+            print("User successfully registered! Please login to continue.")
+            time.sleep(2)
             return login()
             
         else:
             print("Username already exists! Please try again.")
+            time.sleep(2)
 
 def logout(username):
     cur.execute("UPDATE auth SET loggedin = 0 WHERE username = ?", (username, ))
@@ -127,50 +103,51 @@ def logout(username):
     row = cur.fetchone()
     print("Logged out at", row[0])
     time.sleep(2)
-    return
+    return 0
 
-# if "__name__" == "__main__":
-graphic()
-print("Welcome to the CareAll Application!\n")
-time.sleep(2.5)
-con = sql.connect("careall.db")
-cur = con.cursor()
-cur.execute('''CREATE TABLE IF NOT EXISTS auth 
-(id INT AUTO_INCREMENT PRIMARY KEY,
-username NVARCHAR(150) NOT NULL,
-password NVARCHAR(256) NOT NULL,
-usertype INT(1) NOT NULL,
-loggedin INT(1) CHECK (loggedin IN (1, 0, -1)),
-lastlogin TIMESTAMP DEFAULT CURRENT_TIMESTAMP);''')
-while True:
-    os.system('clear')
-    print("CareAll (v0.1-Alpha)\n____________________\n")
-    print("Enter EXIT to exit the program.")
-    loginChoice = input("1. Login/ 2. New User? (Enter 1 or 2): ")
-    if loginChoice.lower() == "exit":
-        graphic()
-        con.close()
-        print("Exiting program...")
-        exit()
-    loginChoice = int(loginChoice)
-    if loginChoice == 1:
-        userData = login()
-    elif loginChoice == 2:
-        userData = register()
-    else:
-        print("Please enter a valid option and try again.")
-    if userData == None:
-        continue
-    else:
-        os.system('clear')
-        while True:
-            print("CareAll (v0.1-Alpha)\n____________________\n\n")
-            print("Welcome {}!\n{}".format(userData[0], '_'*(len(userData[0])+9)))
-            print("What do you want to do?\n0. Logout")
-            action = int(input("Enter choice: "))
-            if action == 0:
-                logout(userData[0])
-                break
+if __name__ == '__main__':
+    dp.graphic()
+    print("\nWelcome to the CareAll Application!\n")
+    time.sleep(2)
+    con = sql.connect("careall.db")
+    cur = con.cursor()
+    cur.execute('''CREATE TABLE IF NOT EXISTS auth 
+    (id INT AUTO_INCREMENT PRIMARY KEY,
+    username NVARCHAR(150) NOT NULL,
+    password NVARCHAR(256) NOT NULL,
+    usertype INT(1) NOT NULL,
+    loggedin INT(1) CHECK (loggedin IN (1, 0, -1)),
+    lastlogin TIMESTAMP DEFAULT CURRENT_TIMESTAMP);''')
+    while True:
+        dp.pageHeader("", 0)
+        print("Enter EXIT to exit the program.")
+        loggedIn = 0
+        loginChoice = input("1. Login/ 2. New User? (Enter 1 or 2): ")
+        if loginChoice.lower() == "exit":
+            dp.graphic()
+            con.close()
+            print("\nCoded with <3 by Siddharth Prince.\nEmail: siddharthprince31@gmail.com\nGithub: https://github.com/sprince0031\nLinkedIn: https://linkedin.com/in/sprince0031\nCareAll project link: https://github.com/sprince0031/ZekeLabs-CareAll-Project\n")
+            print("Exiting program...")
+            exit()
+        loginChoice = int(loginChoice)
+        if loginChoice == 1:
+            userId, userName, userType, loggedIn, lastLogin, newUser = login()
+        elif loginChoice == 2:
+            userId, userName, userType, loggedIn, lastLogin, newUser = register()
+        else:
+            print("Please enter a valid option and try again.")
+        if userName == None:
+            continue
+        else:
+            os.system('clear')
+            # if newUser == -1:
+            if userType == 1:
+                cg.main(userId, userName, loggedIn, newUser)
+                loggedIn = logout(userName)
+            if userType == 2:
+                cs.main(userId, userName, loggedIn, newUser)
+                loggedIn = logout(userName)
+            
         
 
 
