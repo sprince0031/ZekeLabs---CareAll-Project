@@ -6,3 +6,6 @@ UML/*vpp.bak*
 
 # Untrack VSCode settings configuration folder
 .vscode
+
+# Untrack pycache
+__pycache__
