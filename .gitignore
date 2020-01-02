@@ -1,0 +1,8 @@
+# Untrack the venv configuration
+env/
+
+# Untrack any generated backup files of UML Visual Paradigm project
+UML/*vpp.bak*
+
+# Untrack VSCode settings configuration folder
+.vscode
